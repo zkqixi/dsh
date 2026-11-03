@@ -23,9 +23,18 @@
 
 ## 安装（本地热插拔）
 
+仓库：<https://github.com/zkqixi/dsh.git>（插件作为仓库根，clone 后即是插件包）
+
 ```bash
-ln -s "<repo>/plugins/dsh-llm-relay" ~/.dsh/profiles/desktop/node_modules/@local/dsh-llm-relay
+# 方式一：把仓库目录链接进 profile（Windows 用 junction 或 mklink /J）
+git clone https://github.com/zkqixi/dsh.git E:\c\dsh
+# 然后让 profile 的 node_modules 指向它：
+#   mklink /J %USERPROFILE%\.dsh\profiles\desktop\node_modules\@local\dsh-llm-relay E:\c\dsh
 ```
+
+`node_modules/` 已在 `.gitignore` 里：本地运行时它指向 profile 的 node_modules
+（`@deepseek-ai/schemastery` 与它的依赖都从那里解析）；换机器 clone 后需要
+`pnpm install`（或把本机 profile 的 node_modules 链接过来），否则 `schemastery` 解析不到。
 
 在 `~/.dsh/profiles/desktop/cordis.patch.yml` **末尾的 `insert` 列表里**追加（顶层裸 `- id:` 只会覆盖
 已存在的行，匹配不到任何行时会被 loader 告警跳过——这是 0.1.0 版本"装了却从没挂载"的原因）：
