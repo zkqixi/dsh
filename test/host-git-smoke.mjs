@@ -15,15 +15,21 @@ import { renderGitOutput, runGit } from "../lib/index.js";
 
 const repo = "E:/c/dsh";
 
-// 1) 纯函数：完整输出里的 U+FFFD 不能被吃掉
+// 1) 纯函数：字符保真
 {
+  // 未截断：U+FFFD 原样保留
   const intact = renderGitOutput([Buffer.from("tail\uFFFD", "utf8")], { truncated: false, size: 5 });
   assert.equal(intact, "tail\uFFFD", "未截断时尾字符必须原样保留");
 
-  const cut = renderGitOutput([Buffer.from("tail\uFFFD", "utf8")], { truncated: true, size: 5 });
-  assert.ok(!cut.startsWith("tail\uFFFD"), "截断时要去掉半个字符");
-  assert.match(cut, /已截断/, "截断必须显式标记");
-  assert.match(cut, /未送审/, "要让审查方知道覆盖不完整");
+  // 截断但边界正好落在完整字符之后：合法 U+FFFD 不能被误删
+  const legit = renderGitOutput([Buffer.from("\uFFFDx", "utf8")], { truncated: true, size: 3 });
+  assert.ok(legit.startsWith("\uFFFDx"), "合法 U+FFFD 必须保留：" + JSON.stringify(legit.slice(0, 4)));
+  assert.match(legit, /已截断/);
+
+  // 真正的半个字符：把「你」的 3 字节截成 2 字节
+  const half = renderGitOutput([Buffer.from("你好", "utf8").subarray(0, 2)], { truncated: true, size: 2 });
+  assert.ok(!half.includes("\uFFFD"), "半个字符不得残留替换符：" + JSON.stringify(half));
+  assert.match(half, /未送审/);
 }
 
 let gitAvailable = true;
