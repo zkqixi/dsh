@@ -36,31 +36,34 @@ git clone https://github.com/zkqixi/dsh.git E:\c\dsh
 （`@deepseek-ai/schemastery` 与它的依赖都从那里解析）；换机器 clone 后需要
 `pnpm install`（或把本机 profile 的 node_modules 链接过来），否则 `schemastery` 解析不到。
 
-在 `~/.dsh/profiles/desktop/cordis.patch.yml` **末尾的 `insert` 列表里**追加（顶层裸 `- id:` 只会覆盖
-已存在的行，匹配不到任何行时会被 loader 告警跳过——这是 0.1.0 版本"装了却从没挂载"的原因）：
+挂载行由**插件自带的 `cordis.patch.yml`** 提供（bundle patch 里 `insert` 一行 `llm-relay`），
+因此「启用/停用这个 bundle」= 真正挂上/卸载它：行消失、provider 释放、`/llm-relay/*` 路由消失。
+不要再到 profile 里手工 `insert` 这一行——那样停用 bundle 时行还在（0.1.x 的 bug）。
+
+profile 的 `cordis.patch.yml` 只需**覆盖它的 config**（顶层 `- id:` 现在能匹配到 bundle 插入的行）：
 
 ```yaml
-- insert:
-    - id: llm-relay
-      name: '@local/dsh-llm-relay'
-      config:
-        envFile: C:\Users\<you>\.dsh\.env
-        relays:
-          - id: agentrouter
-            name: AgentRouter · GPT
-            enabled: true
-            baseURL: https://agentrouter.org/v1
-            api: openai-responses
-            userAgent: claude-cli/2.0.1 (external, cli)
-            apiKeyEnv: AGENTROUTER_API_KEY
-            models:
-              - id: gpt-6.1-sol
-                name: GPT-6.1-Sol
-                contextWindow: 400000
-                maxTokens: 128000
+- id: llm-relay
+  name: '@local/dsh-llm-relay'
+  config:
+    envFile: C:\Users\<you>\.dsh\.env
+    relays:
+      - id: agentrouter
+        name: AgentRouter · GPT
+        enabled: true
+        baseURL: https://agentrouter.org/v1
+        api: openai-responses
+        userAgent: claude-cli/2.0.1 (external, cli)
+        apiKeyEnv: AGENTROUTER_API_KEY
+        models:
+          - id: gpt-6.1-sol
+            name: GPT-6.1-Sol
+            contextWindow: 400000
+            maxTokens: 128000
 ```
 
 patch 改完宿主会重新装配；改了 `lib/*.js` 则要重启宿主（profile 外的文件不在 HMR 监视范围内）。
+停用 bundle 后，侧栏图标/设置页分区会在**刷新页面**后消失（客户端模块随图重建）。
 
 ## 面板与快捷入口
 

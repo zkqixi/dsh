@@ -1,9 +1,7 @@
-# 本插件自带 patch（dsh.bundle.patch）。
-# 这里只声明插件自身默认挂载所需的行；插件的实际挂载行写在宿主 profile：
-#   ~/.dsh/profiles/desktop/cordis.patch.yml
-# 形如：
-#   - id: llm-relay
-#     name: '@local/dsh-llm-relay'
-#     config:
-#       relays: [...]
-[]
+# 插件自带 patch：这一行由 bundle 提供。
+# 启停 bundle（plugin_manager set_bundle / 设置里的插件开关）会直接决定它是否存在，
+# 因此「停用插件」= 行消失、provider 释放、面板入口移除，不再需要手工改 profile。
+- insert:
+    - id: llm-relay
+      name: '@local/dsh-llm-relay'
+      config: {}
