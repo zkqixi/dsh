@@ -39,6 +39,14 @@ const repo = "E:/c/dsh";
   assert.ok(!half.includes("\uFFFD"), "半个字符不得残留替换符：" + JSON.stringify(half));
   assert.match(half, /未送审/);
 
+  // 末尾是「合法 U+FFFD + 一个孤立续字节」：只切掉孤立字节，合法 U+FFFD 保留
+  const stray = render(Buffer.from([0xef, 0xbf, 0xbd, 0x80]));
+  assert.ok(stray.startsWith("\uFFFD"), "孤立续字节不能导致合法 U+FFFD 被删：" + JSON.stringify(stray.slice(0, 3)));
+
+  // 「你」+「好」的首字节：只切残缺部分
+  const cut4 = render(Buffer.from("你好", "utf8").subarray(0, 4));
+  assert.ok(cut4.startsWith("你"), "完整字符不能被多切：" + JSON.stringify(cut4.slice(0, 3)));
+
   // 完整的多字节字符不能被多切
   const whole = render(Buffer.from("你好", "utf8").subarray(0, 3));
   assert.ok(whole.startsWith("你"), "完整字符不能被误切：" + JSON.stringify(whole.slice(0, 3)));
