@@ -7,6 +7,8 @@
 import { gatherMaterial, buildReviewPrompt, completeOnce, normalizeConfig } from "../lib/index.js";
 
 const sha = process.argv[2] ?? "bfc73c0";
+const paths = process.env.PATHS ?? "";
+const maxTokens = Number(process.env.MAXTOK ?? 12000);
 const focus = process.argv[3] ?? "";
 
 const relay = normalizeConfig({
@@ -23,7 +25,7 @@ const relay = normalizeConfig({
   ],
 })[0];
 
-const material = await gatherMaterial({ commit: sha, cwd: "E:/c/dsh" });
+const material = await gatherMaterial({ commit: sha, cwd: "E:/c/dsh", ...(paths ? { paths } : {}) });
 console.log(`材料：source=${material.source} ok=${material.ok} chars=${material.text.length}`);
 if (!material.ok) {
   console.log("取 diff 失败：", material.text.slice(0, 300));
@@ -32,14 +34,17 @@ if (!material.ok) {
 
 const request = buildReviewPrompt({
   summary: [
-    "仓库：DSH 插件 dsh-llm-relay（把 OpenAI 兼容中转注册成 LLM provider）。",
-    "本次提交修的是：git show 取 diff 时 maxBuffer 设得过小，遇到大提交会 ENOBUFS 失败；",
-    "现在先把 maxBuffer 放大到 4MB 完整取出，再由代码截断到 160KB。",
-    "请审查这个改动本身是否安全（截断点是否合理、出错路径是否可读、是否有更稳的做法）。",
+    "仓库：DSH 插件 dsh-llm-relay。上一版提交 bfc73c0 被审查判为不通过，意见是：",
+    "① 声称「消除 ENOBUFS」过头（只是抬高了缓冲门槛）；② 截断语义不清（字节/字符、有无标记、覆盖范围）；",
+    "③ 错误路径缺少证据；④ 建议改用流式采集。",
+    "本次提交 c6438f9 针对这四点改了 runGit：spawn 流式读、到达 maxBytes 即停采并 SIGKILL、",
+    "按字节截断并去掉半个字符、截断时显式标注「仅保留前 N 字节，其余未送审」、",
+    "超时/启动失败/非零退出/截断四种状态分别返回可读结果。",
+    "请审查：这四点是否真的被解决？有没有引入新问题（子进程泄漏、kill 时机、stderr 上限、截断边界、超时竞态）？",
   ].join("\n"),
   diff: material.text,
-  focus,
-  max_tokens: 12000,
+  focus: focus || "上一轮四条意见是否闭环；资源泄漏与竞态；截断后是否仍会给出全量通过结论",
+  max_tokens: maxTokens,
 });
 
 const startedAt = Date.now();
