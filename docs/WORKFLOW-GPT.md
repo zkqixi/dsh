@@ -166,6 +166,10 @@ task_board_run(taskId=…)
 - 开发：让 GPT 独立编写 `test/host-normalize-smoke.mjs` 并自证跑通（我方复跑：退出码 0，PASS）
 - 串行探针（读文件并回显）：GPT 读 `package.json` 第 2 行、指出我 prompt 里写错了行号、只回该行原文 —— 文本 + 工具调用 + 工具结果全链路通过
 - `GET /llm-relay/test?id=agentrouter` → `{ok:true,status:200,detail:"PONG"}`
+- **审查闭环实测（2026-11-03，6 轮）**：同一处 `runGit` 改动被审 6 次，前 5 次都判「不通过」且每次都指出**真实**缺陷
+  （措辞过头 → 固定 maxBuffer → U+FFFD 误删 → spawn error 顺序 → BOM/非法前缀 → 孤立续字节），第 6 次「通过」。
+  每轮成本约 1k input / 5–8k output（其中 80–95% 是 reasoning）、100–270s。**小 diff + 只问一两件事**才跑得动；
+  中等及以上 diff 会把 12k–20k 输出预算全花在 reasoning 上、甚至超时。
 - ⚠️ **并发跑两个探针会把出口 IP 的令牌速率打爆**（`rate_limit_exceeded`），随后同批请求被归类为【限流】。
   结论：探活要串行、单发；并发探针本身就会制造失败。
 
