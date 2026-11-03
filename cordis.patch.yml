@@ -1,0 +1,9 @@
+# 本插件自带 patch（dsh.bundle.patch）。
+# 这里只声明插件自身默认挂载所需的行；插件的实际挂载行写在宿主 profile：
+#   ~/.dsh/profiles/desktop/cordis.patch.yml
+# 形如：
+#   - id: llm-relay
+#     name: '@local/dsh-llm-relay'
+#     config:
+#       relays: [...]
+[]

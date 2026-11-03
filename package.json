@@ -1,0 +1,36 @@
+{
+  "name": "@local/dsh-llm-relay",
+  "version": "0.1.0",
+  "description": "GPT 中转（LLM relay）插件：以自定义 LlmAdapter 原生注册中转 provider，在请求头里强制上游要求的 User-Agent 与 Authorization，并在设置页提供多条目管理与测试连接。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.1-rc.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.5"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "docs",
+    "README.md"
+  ]
+}
