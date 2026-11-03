@@ -154,19 +154,19 @@ for (const [status, pattern, label] of [
     return { ok: true, text: "DIFF-FROM-GIT" };
   };
 
-  const byCommit = gatherMaterial({ commit: "abc123", cwd: "/repo" }, fakeGit);
+  const byCommit = await gatherMaterial({ commit: "abc123", cwd: "/repo" }, fakeGit);
   assert.equal(byCommit.ok, true);
   assert.equal(byCommit.source, "commit abc123");
   assert.deepEqual(calls[0].args.slice(0, 2), ["show", "--stat"], "commit 走 git show");
   assert.equal(calls[0].cwd, "/repo");
 
   calls = [];
-  const byCwd = gatherMaterial({ cwd: "/repo", paths: "lib/a.js" }, fakeGit);
+  const byCwd = await gatherMaterial({ cwd: "/repo", paths: "lib/a.js" }, fakeGit);
   assert.equal(byCwd.source, "working tree");
   assert.deepEqual(calls[0].args.slice(0, 2), ["diff", "HEAD"], "只给 cwd 时取工作区改动");
   assert.ok(calls[0].args.includes("lib/a.js"), "paths 要透传");
 
-  const explicit = gatherMaterial({ diff: "EXPLICIT" }, fakeGit);
+  const explicit = await gatherMaterial({ diff: "EXPLICIT" }, fakeGit);
   assert.equal(explicit.text, "EXPLICIT", "显式 diff 优先级最高");
 }
 
@@ -183,6 +183,23 @@ for (const [status, pattern, label] of [
   assert.equal(value.materialSource, "commit abc123");
   assert.match(captured.input, /COMMIT-DIFF-BODY/, "commit 取到的 diff 要进请求");
   assert.equal(captured.tools, undefined, "仍然零工具");
+}
+
+// 12) 流式截断：超出上限时保留前 N 字节、带截断标记、且不抛错
+{
+  const { runGit } = await import("../lib/index.js");
+  const { existsSync } = await import("node:fs");
+  if (existsSync("E:/c/dsh/.git")) {
+    const small = await runGit(["rev-parse", "HEAD"], "E:/c/dsh");
+    assert.equal(small.ok, true, "小输出应成功");
+    assert.match(small.text.trim(), /^[0-9a-f]{7,40}$/);
+
+    const big = await runGit(["show", "--patch", "HEAD"], "E:/c/dsh", { maxBytes: 200 });
+    assert.equal(big.ok, true, "截断不是失败");
+    assert.equal(big.truncated, true, "应标记截断");
+    assert.ok(big.text.length < 1000, "保留下来的内容必须有界");
+    assert.match(big.text, /已截断/, "必须明确标记只送审了一部分");
+  }
 }
 
 console.log("RESULT: PASS — gpt_review 零工具单次请求（无 tools 字段）+ 归因 + 工具契约");
